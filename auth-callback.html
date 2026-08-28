@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Signing you in… — RentoRide</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-client.js"></script>
+<style>
+  body{margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:#FBF9F3; font-family:'Inter',system-ui,sans-serif; color:#141414;}
+  .spinner{width:34px; height:34px; border:3px solid #ECE8DC; border-top-color:#F6B90D; border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 14px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .box{text-align:center; font-size:0.9rem; color:#5B5952;}
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="spinner"></div>
+    <p>Finishing sign-in…</p>
+  </div>
+
+<script>
+(async function(){
+  // Supabase JS automatically parses the OAuth redirect and stores the session.
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session){
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const pendingType = localStorage.getItem('rentoride_pending_account_type');
+  localStorage.removeItem('rentoride_pending_account_type');
+
+  // If this is a brand-new Google sign-up, the profile row was just
+  // auto-created by the DB trigger with the default 'customer' type.
+  // If the person chose "owner" on the login screen before continuing
+  // with Google, apply that now.
+  if (pendingType === 'owner'){
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('account_type')
+      .eq('id', session.user.id)
+      .single();
+    if (profile && profile.account_type !== 'owner'){
+      await supabaseClient.from('profiles').update({ account_type: 'owner' }).eq('id', session.user.id);
+    }
+  }
+
+  const { data: profile } = await supabaseClient
+    .from('profiles')
+    .select('account_type')
+    .eq('id', session.user.id)
+    .single();
+
+  window.location.href = (profile && profile.account_type === 'owner') ? 'owner-dashboard.html' : 'customer-dashboard.html';
+})();
+</script>
+</body>
+</html>

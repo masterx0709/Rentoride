@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — RentoRide</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-client.js"></script>
+<style>
+  :root{
+    --yellow:#F6B90D;
+    --yellow-dark:#E0A800;
+    --ink:#141414;
+    --ink-soft:#5B5952;
+    --paper:#FFFFFF;
+    --cloud:#FBF9F3;
+    --line:#ECE8DC;
+    --radius:16px;
+    --shadow:0 10px 26px rgba(20,20,20,0.10);
+    --danger:#C4432D;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    font-family:'Inter',system-ui,sans-serif; color:var(--ink);
+    background:var(--cloud);
+    display:flex; flex-direction:column;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2{font-family:'Poppins',system-ui,sans-serif; margin:0;}
+  p{margin:0;}
+  a{text-decoration:none; color:inherit;}
+  button{font-family:inherit;}
+  :focus-visible{outline:2.5px solid var(--yellow-dark); outline-offset:2px;}
+  .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
+
+  /* top brand bar */
+  .topbar{background:var(--ink); padding:16px 20px;}
+  .brand{display:flex; align-items:center; gap:9px; max-width:1180px; margin:0 auto;}
+  .brand-mark{width:30px; height:30px; object-fit:contain;}
+  .brand-name{font-weight:800; font-size:1.05rem; color:#fff;}
+  .brand-name span{color:var(--yellow);}
+
+  main{flex:1; display:flex; align-items:center; justify-content:center; padding:28px 16px 48px;}
+
+  .auth-card{
+    width:100%; max-width:400px; background:var(--paper);
+    border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:28px 24px 26px;
+  }
+  .auth-head{text-align:center; margin-bottom:22px;}
+  .auth-eyebrow{
+    display:inline-flex; align-items:center; gap:8px; color:var(--yellow-dark);
+    font-weight:700; font-size:0.68rem; letter-spacing:0.14em; text-transform:uppercase; margin-bottom:8px;
+  }
+  .auth-head h1{font-size:1.35rem; font-weight:800; letter-spacing:-0.01em;}
+  .auth-head p{color:var(--ink-soft); font-size:0.85rem; margin-top:6px;}
+
+  .mode-toggle{
+    display:flex; background:var(--cloud); border:1px solid var(--line);
+    border-radius:12px; padding:4px; margin-bottom:20px;
+  }
+  .mode-btn{
+    flex:1; text-align:center; padding:9px 10px; border:none; background:none;
+    border-radius:9px; font-weight:700; font-size:0.85rem; color:var(--ink-soft); cursor:pointer;
+  }
+  .mode-btn.active{background:var(--ink); color:var(--yellow);}
+
+  .google-btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+    padding:13px 16px; border-radius:12px; border:1.5px solid var(--line);
+    background:var(--paper); font-weight:700; font-size:0.92rem; color:var(--ink);
+    cursor:pointer; transition:border-color .15s ease, background .15s ease;
+  }
+  .google-btn:hover{border-color:#c9c4b3; background:var(--cloud);}
+  .google-btn svg{width:19px; height:19px; flex:0 0 auto;}
+
+  .divider{display:flex; align-items:center; gap:12px; margin:18px 0; color:var(--ink-soft); font-size:0.76rem; font-weight:600;}
+  .divider::before, .divider::after{content:""; flex:1; height:1px; background:var(--line);}
+
+  .form-fields{display:flex; flex-direction:column; gap:12px;}
+  .field-group label{display:block; font-size:0.78rem; font-weight:700; color:var(--ink-soft); margin-bottom:6px;}
+  .field-group input{
+    width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:10px;
+    font-size:0.92rem; font-family:inherit; color:var(--ink); background:var(--paper); outline:none;
+    transition:border-color .15s ease;
+  }
+  .field-group input:focus{border-color:var(--yellow-dark);}
+  .field-group input::placeholder{color:#A9A69C;}
+  .field-error{color:var(--danger); font-size:0.74rem; margin-top:5px; display:none;}
+  .field-error.show{display:block;}
+  .field-group.invalid input{border-color:var(--danger);}
+
+  .password-row{position:relative;}
+  .toggle-pw{
+    position:absolute; right:12px; top:34px; background:none; border:none; cursor:pointer;
+    font-size:0.72rem; font-weight:700; color:var(--ink-soft); padding:4px;
+  }
+
+  .row-between{display:flex; align-items:center; justify-content:space-between; font-size:0.8rem;}
+  .checkbox-row{display:flex; align-items:center; gap:7px; color:var(--ink-soft);}
+  .checkbox-row input{width:15px; height:15px; accent-color:var(--yellow-dark);}
+  .link-muted{color:var(--ink-soft); font-weight:600;}
+  .link-muted:hover{color:var(--yellow-dark);}
+
+  .btn-primary{
+    margin-top:6px; width:100%; padding:14px 18px; border-radius:12px; border:none;
+    background:var(--yellow); color:var(--ink); font-weight:700; font-size:0.94rem; cursor:pointer;
+    transition:background .15s ease, transform .15s ease;
+  }
+  .btn-primary:hover{background:var(--yellow-dark); transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:0.6; cursor:not-allowed; transform:none;}
+
+  .switch-line{text-align:center; font-size:0.85rem; color:var(--ink-soft); margin-top:18px;}
+  .switch-line button{background:none; border:none; color:var(--ink); font-weight:700; cursor:pointer; padding:0; text-decoration:underline; text-underline-offset:2px;}
+
+  .fine-print{text-align:center; font-size:0.72rem; color:#A9A69C; margin-top:16px; line-height:1.5;}
+  .fine-print a{color:var(--ink-soft); text-decoration:underline; text-underline-offset:2px;}
+
+  .success-panel{display:none; text-align:center; padding:8px 0 4px;}
+  .success-panel.show{display:block;}
+  .success-panel svg{width:46px; height:46px; stroke:var(--yellow-dark); margin-bottom:12px;}
+  .success-panel h2{font-size:1.1rem; font-weight:800;}
+  .success-panel p{color:var(--ink-soft); font-size:0.86rem; margin-top:6px;}
+
+  @media (max-width:380px){
+    .auth-card{padding:24px 18px 22px;}
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <a href="index.html" class="brand">
+      <img src="assets/logo.png" alt="RentoRide logo" class="brand-mark" width="30" height="30">
+      <span class="brand-name">Rento<span>Ride</span></span>
+    </a>
+  </div>
+
+  <main>
+    <div class="auth-card">
+
+      <div id="formView">
+        <div class="auth-head">
+          <span class="auth-eyebrow">Verified riders only</span>
+          <h1 id="headTitle">Welcome back</h1>
+          <p id="headSub">Sign in to book, track, and manage your rides.</p>
+        </div>
+
+        <div class="mode-toggle" role="tablist" aria-label="Choose sign in or create account">
+          <button type="button" class="mode-btn active" id="tabLogin" role="tab" aria-selected="true">Log in</button>
+          <button type="button" class="mode-btn" id="tabSignup" role="tab" aria-selected="false">Create account</button>
+        </div>
+
+        <div class="mode-toggle" role="tablist" aria-label="Choose account type" style="margin-bottom:16px;">
+          <button type="button" class="mode-btn active" id="typeCustomer" role="tab" aria-selected="true">I'm a customer</button>
+          <button type="button" class="mode-btn" id="typeOwner" role="tab" aria-selected="false">I'm a vehicle owner</button>
+        </div>
+
+        <button type="button" class="google-btn" id="googleBtn">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.9 32.3 29.4 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.4-.4-3.5Z"/>
+            <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.9 18.9 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.6 7.1 29.6 5 24 5c-7.4 0-13.7 4.2-16.9 10.2-.3.5-.5 1-.8 1.5Z"/>
+            <path fill="#4CAF50" d="M24 43c5.4 0 10.3-2 13.9-5.4l-6.4-5.4C29.6 34 26.9 35 24 35c-5.4 0-9.9-3.6-11.5-8.5l-6.5 5c3.2 6.3 9.6 11.5 18 11.5Z"/>
+            <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.4l6.4 5.4C41.6 35.6 45 30.4 45 24c0-1.4-.1-2.4-.4-3.5Z"/>
+          </svg>
+          Continue with Google
+        </button>
+        <p class="fine-print" id="googleNote" style="margin-top:10px; display:none;">Google sign-in isn't set up yet — use email below, or ask the site owner to enable it in Supabase (Authentication → Providers).</p>
+
+        <div class="divider">or</div>
+
+        <form class="form-fields" id="authForm" novalidate>
+
+          <div class="field-group" id="nameGroup" style="display:none;">
+            <label for="fullName">Full name</label>
+            <input type="text" id="fullName" placeholder="Your full name" autocomplete="name">
+            <p class="field-error" id="nameError">Please enter your name.</p>
+          </div>
+
+          <div class="field-group" id="emailGroup">
+            <label for="email">Email address</label>
+            <input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+            <p class="field-error" id="emailError">Please enter a valid email address.</p>
+          </div>
+
+          <div class="field-group" id="phoneGroup" style="display:none;">
+            <label for="phone">Phone number</label>
+            <input type="tel" id="phone" placeholder="10-digit mobile number" autocomplete="tel">
+            <p class="field-error" id="phoneError">Please enter a valid 10-digit number.</p>
+          </div>
+
+          <div class="field-group password-row" id="pwGroup">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+            <button type="button" class="toggle-pw" id="togglePw">Show</button>
+            <p class="field-error" id="pwError">Password must be at least 6 characters.</p>
+          </div>
+
+          <div class="row-between" id="rememberRow">
+            <label class="checkbox-row">
+              <input type="checkbox" id="rememberMe">
+              Remember me
+            </label>
+            <a href="#" class="link-muted" id="forgotLink">Forgot password?</a>
+          </div>
+
+          <label class="checkbox-row" id="termsRow" style="display:none;">
+            <input type="checkbox" id="agreeTerms">
+            <span>I agree to the <a href="terms.html" target="_blank" class="link-muted">Terms</a> &amp; <a href="privacy.html" target="_blank" class="link-muted">Privacy Policy</a></span>
+          </label>
+
+          <button type="submit" class="btn-primary" id="submitBtn">Log in</button>
+        </form>
+
+        <p class="switch-line" id="switchLine">
+          New to RentoRide? <button type="button" id="switchToSignup">Create an account</button>
+        </p>
+
+        <p class="fine-print">By continuing you agree to RentoRide's <a href="terms.html" target="_blank">Terms of Service</a> and <a href="privacy.html" target="_blank">Privacy Policy</a>.</p>
+      </div>
+
+      <div class="success-panel" id="successPanel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        <h2 id="successTitle">You're in!</h2>
+        <p id="successMsg">Taking you back to RentoRide…</p>
+      </div>
+
+    </div>
+  </main>
+
+<script>
+  const tabLogin = document.getElementById('tabLogin');
+  const tabSignup = document.getElementById('tabSignup');
+  const headTitle = document.getElementById('headTitle');
+  const headSub = document.getElementById('headSub');
+  const nameGroup = document.getElementById('nameGroup');
+  const phoneGroup = document.getElementById('phoneGroup');
+  const termsRow = document.getElementById('termsRow');
+  const rememberRow = document.getElementById('rememberRow');
+  const submitBtn = document.getElementById('submitBtn');
+  const switchLine = document.getElementById('switchLine');
+  const switchToSignup = document.getElementById('switchToSignup');
+  const pwInput = document.getElementById('password');
+  const togglePw = document.getElementById('togglePw');
+  const authForm = document.getElementById('authForm');
+  const formView = document.getElementById('formView');
+  const successPanel = document.getElementById('successPanel');
+  const successTitle = document.getElementById('successTitle');
+  const successMsg = document.getElementById('successMsg');
+  const googleBtn = document.getElementById('googleBtn');
+
+  let mode = 'login'; // or 'signup'
+  let accountType = 'customer'; // or 'owner'
+
+  const typeCustomer = document.getElementById('typeCustomer');
+  const typeOwner = document.getElementById('typeOwner');
+  function setAccountType(next){
+    accountType = next;
+    typeCustomer.classList.toggle('active', next === 'customer');
+    typeCustomer.setAttribute('aria-selected', String(next === 'customer'));
+    typeOwner.classList.toggle('active', next === 'owner');
+    typeOwner.setAttribute('aria-selected', String(next === 'owner'));
+  }
+  typeCustomer.addEventListener('click', () => setAccountType('customer'));
+  typeOwner.addEventListener('click', () => setAccountType('owner'));
+
+  function setMode(next){
+    mode = next;
+    const isSignup = mode === 'signup';
+    tabLogin.classList.toggle('active', !isSignup);
+    tabLogin.setAttribute('aria-selected', String(!isSignup));
+    tabSignup.classList.toggle('active', isSignup);
+    tabSignup.setAttribute('aria-selected', String(isSignup));
+
+    headTitle.textContent = isSignup ? 'Create your account' : 'Welcome back';
+    headSub.textContent = isSignup ? 'Sign up to start renting bikes and cars near you.' : 'Sign in to book, track, and manage your rides.';
+    nameGroup.style.display = isSignup ? '' : 'none';
+    phoneGroup.style.display = isSignup ? '' : 'none';
+    termsRow.style.display = isSignup ? 'flex' : 'none';
+    rememberRow.style.display = isSignup ? 'none' : 'flex';
+    submitBtn.textContent = isSignup ? 'Create account' : 'Log in';
+    pwInput.setAttribute('autocomplete', isSignup ? 'new-password' : 'current-password');
+    switchLine.innerHTML = isSignup
+      ? 'Already have an account? <button type="button" id="switchToLogin">Log in</button>'
+      : 'New to RentoRide? <button type="button" id="switchToSignup">Create an account</button>';
+
+    const switchBtn = document.getElementById(isSignup ? 'switchToLogin' : 'switchToSignup');
+    switchBtn.addEventListener('click', () => setMode(isSignup ? 'login' : 'signup'));
+
+    clearErrors();
+  }
+
+  tabLogin.addEventListener('click', () => setMode('login'));
+  tabSignup.addEventListener('click', () => setMode('signup'));
+  switchToSignup.addEventListener('click', () => setMode('signup'));
+
+  togglePw.addEventListener('click', () => {
+    const isPw = pwInput.type === 'password';
+    pwInput.type = isPw ? 'text' : 'password';
+    togglePw.textContent = isPw ? 'Hide' : 'Show';
+  });
+
+  function setFieldError(inputId, errorId, show){
+    const group = document.getElementById(inputId).closest('.field-group');
+    group.classList.toggle('invalid', show);
+    document.getElementById(errorId).classList.toggle('show', show);
+  }
+
+  function clearErrors(){
+    ['name','email','phone','pw'].forEach(k => {
+      const input = k === 'name' ? 'fullName' : k === 'pw' ? 'password' : k;
+      setFieldError(input, k + 'Error', false);
+    });
+  }
+
+  function isValidEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  function isValidPhone(v){ return /^[6-9]\d{9}$/.test(v.replace(/\D/g,'')); }
+
+  authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearErrors();
+    let valid = true;
+    const isSignup = mode === 'signup';
+
+    if (isSignup && !document.getElementById('fullName').value.trim()){
+      setFieldError('fullName','nameError', true); valid = false;
+    }
+    const emailVal = document.getElementById('email').value.trim();
+    if (!isValidEmail(emailVal)){
+      setFieldError('email','emailError', true); valid = false;
+    }
+    if (isSignup){
+      const phoneVal = document.getElementById('phone').value.trim();
+      if (!isValidPhone(phoneVal)){
+        setFieldError('phone','phoneError', true); valid = false;
+      }
+    }
+    if (pwInput.value.length < 6){
+      setFieldError('password','pwError', true); valid = false;
+    }
+    if (isSignup && !document.getElementById('agreeTerms').checked){
+      valid = false;
+      alert('Please agree to the Terms & Privacy Policy to continue.');
+    }
+    if (!valid) return;
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = isSignup ? 'Creating account…' : 'Logging in…';
+
+    try{
+      if (isSignup){
+        const fullName = document.getElementById('fullName').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const { data, error } = await supabaseClient.auth.signUp({
+          email: emailVal,
+          password: pwInput.value,
+          options: { data: { full_name: fullName, account_type: accountType } }
+        });
+        if (error) throw error;
+        // Fill in phone on the auto-created profile row
+        if (data.user){
+          await supabaseClient.from('profiles').update({ phone }).eq('id', data.user.id);
+        }
+      } else {
+        const { error } = await supabaseClient.auth.signInWithPassword({
+          email: emailVal,
+          password: pwInput.value
+        });
+        if (error) throw error;
+      }
+
+      formView.style.display = 'none';
+      successPanel.classList.add('show');
+      successTitle.textContent = isSignup ? 'Account created!' : 'You\'re in!';
+      successMsg.textContent = isSignup
+        ? 'Welcome to RentoRide — redirecting you to your dashboard…'
+        : 'Taking you back to RentoRide…';
+
+      // Redirect off the account's real account_type, not just the tab
+      // the person happened to click on this form — avoids a wrong-then-
+      // corrected dashboard flash for owners who log in on the wrong tab.
+      let dest = accountType === 'owner' ? 'owner-dashboard.html' : 'customer-dashboard.html';
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session){
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('account_type')
+          .eq('id', session.user.id)
+          .single();
+        if (profile) dest = profile.account_type === 'owner' ? 'owner-dashboard.html' : 'customer-dashboard.html';
+      }
+      setTimeout(() => { window.location.href = dest; }, 1500);
+    } catch(err){
+      submitBtn.disabled = false;
+      submitBtn.textContent = isSignup ? 'Create account' : 'Log in';
+      alert(err.message || 'Something went wrong. Please try again.');
+    }
+  });
+
+  googleBtn.addEventListener('click', async () => {
+    googleBtn.disabled = true;
+    googleBtn.textContent = 'Connecting to Google…';
+    // Account type is remembered so the post-OAuth redirect (in each
+    // dashboard's auth check) knows where a brand-new Google user should land.
+    localStorage.setItem('rentoride_pending_account_type', accountType);
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + window.location.pathname.replace('login.html','auth-callback.html') }
+    });
+    if (error){
+      googleBtn.disabled = false;
+      googleBtn.textContent = 'Continue with Google';
+      if (/provider is not enabled/i.test(error.message)){
+        document.getElementById('googleNote').style.display = 'block';
+      } else {
+        alert(error.message);
+      }
+    }
+    // On success, Supabase redirects the browser to Google, then back —
+    // this function does not resolve further in this page load.
+  });
+
+  // Forgot password
+  document.getElementById('forgotLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    const emailVal = document.getElementById('email').value.trim();
+    if (!isValidEmail(emailVal)){
+      alert('Enter your email address above first, then click "Forgot password?" again.');
+      return;
+    }
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(emailVal, {
+      redirectTo: window.location.origin + window.location.pathname.replace('login.html','reset-password.html')
+    });
+    if (error) alert(error.message);
+    else alert('Password reset link sent to ' + emailVal);
+  });
+</script>
+
+</body>
+</html>
