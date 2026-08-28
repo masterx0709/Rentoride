@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owner Dashboard — RentoRide</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-client.js"></script>
+<style>
+  :root{
+    --yellow:#F6B90D; --yellow-dark:#E0A800; --ink:#141414; --ink-soft:#5B5952;
+    --paper:#FFFFFF; --cloud:#FBF9F3; --line:#ECE8DC; --radius:16px;
+    --shadow:0 10px 26px rgba(20,20,20,0.10); --danger:#C4432D; --success:#2E7D4F; --pending:#B8860B;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:'Inter',system-ui,sans-serif; color:var(--ink); background:var(--cloud); -webkit-font-smoothing:antialiased;}
+  h1,h2,h3{font-family:'Poppins',system-ui,sans-serif; margin:0;}
+  p{margin:0;} a{text-decoration:none; color:inherit;} button{font-family:inherit;}
+  ul{margin:0; padding:0; list-style:none;}
+  img{max-width:100%; display:block;}
+  :focus-visible{outline:2.5px solid var(--yellow-dark); outline-offset:2px;}
+
+  header{background:var(--ink); position:sticky; top:0; z-index:40;}
+  .nav{display:flex; align-items:center; justify-content:space-between; padding:14px 18px; max-width:1080px; margin:0 auto;}
+  .brand{display:flex; align-items:center; gap:9px;}
+  .brand-mark{width:30px; height:30px; object-fit:contain;}
+  .brand-name{font-weight:800; font-size:1.05rem; color:#fff;}
+  .brand-name span{color:var(--yellow);}
+  .nav-right{display:flex; align-items:center; gap:14px;}
+  .nav-right a{color:rgba(255,255,255,0.75); font-size:0.85rem; font-weight:600;}
+  .avatar-circle{
+    width:32px; height:32px; border-radius:50%; background:var(--yellow); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:0.85rem; cursor:pointer; border:none;
+  }
+
+  .page-head{padding:26px 18px 6px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; max-width:1080px; margin:0 auto;}
+  .page-head h1{font-size:1.4rem; font-weight:800; letter-spacing:-0.01em;}
+  .page-head p{color:var(--ink-soft); font-size:0.88rem; margin-top:4px;}
+  .add-vehicle-btn{
+    padding:12px 18px; border-radius:11px; border:none; background:var(--yellow); color:var(--ink);
+    font-weight:700; font-size:0.86rem; cursor:pointer; white-space:nowrap;
+  }
+  .add-vehicle-btn:hover{background:var(--yellow-dark);}
+
+  .stat-row{display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:18px; max-width:1080px; margin:0 auto;}
+  .stat-card{background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:var(--shadow);}
+  .stat-card b{display:block; font-size:1.3rem; font-family:'Poppins',sans-serif;}
+  .stat-card span{font-size:0.76rem; color:var(--ink-soft); font-weight:600;}
+  .stat-card.highlight b{color:var(--yellow-dark);}
+
+  .tabs{display:flex; gap:6px; padding:0 18px 14px; overflow-x:auto; max-width:1080px; margin:0 auto;}
+  .tab-btn{
+    flex:0 0 auto; padding:9px 16px; border-radius:10px; border:1px solid var(--line);
+    background:var(--paper); font-weight:700; font-size:0.82rem; color:var(--ink-soft); cursor:pointer; white-space:nowrap;
+  }
+  .tab-btn.active{background:var(--ink); color:var(--yellow); border-color:var(--ink);}
+
+  section.panel{padding:0 18px 18px; display:none; max-width:1080px; margin:0 auto;}
+  section.panel.active{display:block;}
+
+  /* listings */
+  .listing-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow); padding:16px; margin-bottom:14px; display:flex; gap:14px;
+  }
+  .listing-thumb{width:84px; height:84px; border-radius:12px; object-fit:cover; flex:0 0 auto; background:var(--cloud);}
+  .listing-body{flex:1; min-width:0;}
+  .listing-top{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+  .listing-top h3{font-size:1rem; font-weight:700;}
+  .status-chip{font-size:0.7rem; font-weight:700; padding:4px 10px; border-radius:20px; white-space:nowrap;}
+  .status-live{background:#E4F5EA; color:var(--success);}
+  .status-review{background:#FFF3D6; color:var(--pending);}
+  .status-paused{background:var(--cloud); color:var(--ink-soft);}
+  .listing-meta{display:flex; flex-wrap:wrap; gap:12px; margin-top:8px; font-size:0.8rem; color:var(--ink-soft);}
+  .listing-meta span{display:flex; align-items:center; gap:5px;}
+  .listing-meta svg{width:14px; height:14px; stroke:var(--yellow-dark); flex:0 0 auto;}
+  .listing-actions{display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .btn-sm{padding:8px 14px; border-radius:9px; font-size:0.78rem; font-weight:700; cursor:pointer; border:1px solid var(--line); background:var(--paper); color:var(--ink);}
+  .btn-sm.primary{background:var(--yellow); border-color:var(--yellow);}
+  .btn-sm.danger{color:var(--danger); border-color:#F1CFC7;}
+  .btn-sm:hover{background:var(--cloud);}
+  .btn-sm.primary:hover{background:var(--yellow-dark);}
+
+  /* bookings table */
+  .booking-row{
+    background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:14px 16px;
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; flex-wrap:wrap;
+  }
+  .booking-row .who{font-weight:700; font-size:0.9rem;}
+  .booking-row .details{font-size:0.78rem; color:var(--ink-soft); margin-top:3px;}
+  .booking-row .amount{font-weight:800; font-family:'Poppins',sans-serif; font-size:1rem;}
+
+  /* earnings */
+  .earnings-card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:20px; margin-bottom:16px;}
+  .earnings-total{display:flex; align-items:baseline; gap:8px; margin-bottom:14px;}
+  .earnings-total b{font-size:1.9rem; font-family:'Poppins',sans-serif;}
+  .earnings-total span{color:var(--ink-soft); font-size:0.82rem;}
+  .payout-row{display:flex; align-items:center; justify-content:space-between; padding:10px 0; border-top:1px dashed var(--line); font-size:0.85rem;}
+  .payout-row:first-of-type{border-top:none;}
+  .payout-status{font-size:0.72rem; font-weight:700; padding:3px 9px; border-radius:20px;}
+  .payout-status.paid{background:#E4F5EA; color:var(--success);}
+  .payout-status.pending{background:#FFF3D6; color:var(--pending);}
+  .bar-chart{display:flex; align-items:flex-end; gap:8px; height:110px; margin-top:16px;}
+  .bar{flex:1; background:var(--yellow); border-radius:6px 6px 0 0; position:relative;}
+  .bar-label{position:absolute; bottom:-20px; left:0; right:0; text-align:center; font-size:0.66rem; color:var(--ink-soft);}
+
+  .empty-state{text-align:center; padding:40px 20px; color:var(--ink-soft); font-size:0.88rem; background:var(--paper); border:1px dashed var(--line); border-radius:var(--radius);}
+
+  /* profile */
+  .profile-card{background:var(--paper); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:22px; max-width:520px;}
+  .profile-fields{display:grid; gap:14px;}
+  .profile-field label{display:block; font-size:0.76rem; font-weight:700; color:var(--ink-soft); margin-bottom:6px;}
+  .profile-field input{width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; font-size:0.9rem; font-family:inherit; background:var(--cloud);}
+  .save-btn{margin-top:18px; padding:12px 22px; border-radius:11px; border:none; background:var(--yellow); color:var(--ink); font-weight:700; font-size:0.88rem; cursor:pointer;}
+  .save-btn:hover{background:var(--yellow-dark);}
+
+  /* add vehicle modal */
+  .modal-overlay{position:fixed; inset:0; background:rgba(20,20,20,0.6); z-index:200; display:none; align-items:flex-end; justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal-card{background:var(--paper); width:100%; max-width:460px; border-radius:20px 20px 0 0; padding:22px 20px 24px; max-height:88vh; overflow-y:auto;}
+  .modal-head{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px;}
+  .modal-head h3{font-size:1.1rem; font-weight:800;}
+  .modal-close{background:var(--cloud); border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+  .modal-form{display:flex; flex-direction:column; gap:12px;}
+  .modal-form label{font-size:0.78rem; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:5px;}
+  .modal-form input, .modal-form select{width:100%; padding:11px 13px; border:1px solid var(--line); border-radius:10px; font-size:0.9rem; font-family:inherit;}
+
+  footer.mini-footer{padding:20px 18px 30px; text-align:center; font-size:0.76rem; color:var(--ink-soft);}
+  footer.mini-footer a{text-decoration:underline; text-underline-offset:2px;}
+
+  @media (min-width:640px){
+    .stat-row{grid-template-columns:repeat(4,1fr);}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="nav">
+    <a href="index.html" class="brand">
+      <img src="assets/logo.png" alt="RentoRide logo" class="brand-mark" width="30" height="30">
+      <span class="brand-name">Rento<span>Ride</span></span>
+    </a>
+    <div class="nav-right">
+      <a href="index.html">View site</a>
+      <a href="#" id="ownerLogoutLink">Log out</a>
+      <button class="avatar-circle" id="avatarBtn">R</button>
+    </div>
+  </nav>
+</header>
+
+<div class="page-head">
+  <div>
+    <h1 id="greeting">Owner dashboard</h1>
+    <p>Manage your listings, track bookings, and see your payouts.</p>
+  </div>
+  <button class="add-vehicle-btn" id="addVehicleBtn">+ List a vehicle</button>
+</div>
+
+<div class="stat-row">
+  <div class="stat-card highlight"><b id="statEarnings">₹0</b><span>This month's earnings</span></div>
+  <div class="stat-card"><b id="statListings">0</b><span>Active listings</span></div>
+  <div class="stat-card"><b id="statBookings">0</b><span>Bookings this month</span></div>
+  <div class="stat-card"><b id="statRating">0.0</b><span>Average rating</span></div>
+</div>
+
+<div class="tabs" role="tablist">
+  <button class="tab-btn active" data-panel="panelListings" role="tab" aria-selected="true">My Listings</button>
+  <button class="tab-btn" data-panel="panelBookings" role="tab" aria-selected="false">Bookings</button>
+  <button class="tab-btn" data-panel="panelEarnings" role="tab" aria-selected="false">Earnings &amp; Payouts</button>
+  <button class="tab-btn" data-panel="panelProfile" role="tab" aria-selected="false">Profile</button>
+</div>
+
+<section class="panel active" id="panelListings">
+  <div id="listingsList"></div>
+</section>
+
+<section class="panel" id="panelBookings">
+  <div id="bookingsList"></div>
+</section>
+
+<section class="panel" id="panelEarnings">
+  <div class="earnings-card">
+    <div class="earnings-total">
+      <b id="earningsTotal">₹0</b>
+      <span>total earned so far</span>
+    </div>
+    <div class="bar-chart" id="barChart" style="position:relative; margin-bottom:26px;"></div>
+  </div>
+  <div class="earnings-card">
+    <h3 style="font-size:0.95rem; margin-bottom:6px;">Payout history</h3>
+    <div id="payoutList"></div>
+  </div>
+</section>
+
+<section class="panel" id="panelProfile">
+  <div class="profile-card">
+    <div class="profile-fields">
+      <div class="profile-field">
+        <label for="pfName">Full name</label>
+        <input type="text" id="pfName" value="Vikram Singh">
+      </div>
+      <div class="profile-field">
+        <label for="pfPhone">Phone number</label>
+        <input type="tel" id="pfPhone" value="9414012345">
+      </div>
+      <div class="profile-field">
+        <label for="pfCity">City</label>
+        <input type="text" id="pfCity" value="Bundi, Rajasthan">
+      </div>
+      <div class="profile-field">
+        <label for="pfBank">Payout bank account (last 4 digits)</label>
+        <input type="text" id="pfBank" placeholder="e.g. 4821" maxlength="4" inputmode="numeric" pattern="[0-9]{4}">
+        <p style="font-size:0.72rem; color:var(--ink-soft); margin-top:6px;">For your reference only — full account details for payouts are collected securely outside the dashboard, never stored here.</p>
+      </div>
+    </div>
+    <button class="save-btn" id="saveProfileBtn">Save changes</button>
+  </div>
+</section>
+
+<!-- Add vehicle modal -->
+<div class="modal-overlay" id="addModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h3>List a vehicle</h3>
+        <p style="color:var(--ink-soft); font-size:0.82rem; margin-top:3px;">We'll review and get it live within 24 hours.</p>
+      </div>
+      <button class="modal-close" id="addModalClose" aria-label="Close">✕</button>
+    </div>
+    <form class="modal-form" id="addForm">
+      <div>
+        <label for="vType">Vehicle type</label>
+        <select id="vType">
+          <option>Bike / Scooter</option>
+          <option>Motorcycle</option>
+          <option>Car</option>
+          <option>SUV</option>
+        </select>
+      </div>
+      <div>
+        <label for="vModel">Make &amp; model</label>
+        <input type="text" id="vModel" placeholder="e.g. Honda Activa 6G" required>
+      </div>
+      <div>
+        <label for="vCity">City</label>
+        <input type="text" id="vCity" placeholder="e.g. Bundi" required>
+      </div>
+      <div>
+        <label for="vPrice">Daily rental price (₹)</label>
+        <input type="number" id="vPrice" placeholder="e.g. 349" required>
+      </div>
+      <div>
+        <label for="vImage">Photo URL (optional)</label>
+        <input type="url" id="vImage" placeholder="https://... link to a photo of the vehicle">
+      </div>
+      <button type="submit" class="save-btn" style="margin-top:4px;">Submit for review</button>
+    </form>
+  </div>
+</div>
+
+<!-- Edit vehicle modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h3>Edit listing</h3>
+        <p style="color:var(--ink-soft); font-size:0.82rem; margin-top:3px;">Changes go live immediately — no re-review needed.</p>
+      </div>
+      <button class="modal-close" id="editModalClose" aria-label="Close">✕</button>
+    </div>
+    <form class="modal-form" id="editForm">
+      <input type="hidden" id="eId">
+      <div>
+        <label for="eType">Vehicle type</label>
+        <select id="eType">
+          <option>Bike / Scooter</option>
+          <option>Motorcycle</option>
+          <option>Car</option>
+          <option>SUV</option>
+        </select>
+      </div>
+      <div>
+        <label for="eModel">Make &amp; model</label>
+        <input type="text" id="eModel" required>
+      </div>
+      <div>
+        <label for="eCity">City</label>
+        <input type="text" id="eCity" required>
+      </div>
+      <div>
+        <label for="ePrice">Daily rental price (₹)</label>
+        <input type="number" id="ePrice" required>
+      </div>
+      <div>
+        <label for="eImage">Photo URL</label>
+        <input type="url" id="eImage" placeholder="https://... link to a photo of the vehicle">
+      </div>
+      <button type="submit" class="save-btn" style="margin-top:4px;">Save changes</button>
+    </form>
+  </div>
+</div>
+
+<footer class="mini-footer">
+  Need help? <a href="https://wa.me/911234567890" target="_blank" rel="noopener">Message us on WhatsApp</a> &nbsp;·&nbsp; <a href="index.html">Back to home</a>
+</footer>
+
+<script>
+  // Escapes user-controlled text before it's interpolated into innerHTML.
+  // Always wrap any value that came from the database (names, listing
+  // titles, etc.) with this before putting it in a template literal.
+  function escapeHtml(str){
+    return String(str ?? '').replace(/[&<>"']/g, c => ({
+      '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+    }[c]));
+  }
+
+  let owner = null;
+  let listings = [];
+  let bookings = [];
+  const statusLabel = { live:'Live', review:'Under review', paused:'Paused' };
+
+  async function init(){
+    const session = await requireAuth();
+    if (!session) return;
+
+    const profile = await getMyProfile(session.user.id);
+    if (profile && profile.account_type !== 'owner'){
+      // A customer account landed here directly — send them to the right dashboard.
+      window.location.href = 'customer-dashboard.html';
+      return;
+    }
+
+    owner = { id: session.user.id, name: (profile && profile.full_name) || session.user.email.split('@')[0] };
+    document.getElementById('greeting').textContent = 'Welcome back, ' + owner.name.split(' ')[0];
+    document.getElementById('avatarBtn').textContent = owner.name.charAt(0).toUpperCase();
+
+    if (profile){
+      document.getElementById('pfName').value = profile.full_name || '';
+      document.getElementById('pfPhone').value = profile.phone || '';
+      document.getElementById('pfCity').value = profile.city || '';
+      document.getElementById('pfBank').value = profile.bank_last4 || '';
+    }
+
+    await loadListings();
+    await loadBookings();
+    await loadPayouts();
+  }
+
+  async function loadListings(){
+    const { data, error } = await supabaseClient
+      .from('vehicles')
+      .select('id, name, image_url, status, city, price_per_day, vehicle_type, rating')
+      .eq('owner_id', owner.id)
+      .order('created_at', { ascending: false });
+    if (error){ console.error(error.message); listings = []; }
+    else {
+      listings = (data || []).map(v => ({
+        id: v.id, name: v.name, img: v.image_url || 'assets/hero-bikes.jpg',
+        status: v.status, city: v.city, priceNum: Number(v.price_per_day),
+        price: '₹' + Number(v.price_per_day).toLocaleString('en-IN') + '/day',
+        vehicleType: v.vehicle_type, bookingsCount: 0, rating: v.rating || 0
+      }));
+    }
+    renderListings();
+  }
+
+  function listingCardHTML(v){
+    const actions = v.status === 'live'
+      ? `<button class="btn-sm" data-action="pause" data-id="${v.id}">Pause</button><button class="btn-sm" data-action="edit" data-id="${v.id}">Edit</button>`
+      : v.status === 'paused'
+      ? `<button class="btn-sm primary" data-action="resume" data-id="${v.id}">Resume</button><button class="btn-sm" data-action="edit" data-id="${v.id}">Edit</button>`
+      : `<span style="font-size:0.78rem; color:var(--ink-soft); align-self:center;">Our team is verifying documents</span>`;
+    return `
+      <div class="listing-card">
+        <img class="listing-thumb" src="${escapeHtml(v.img)}" alt="${escapeHtml(v.name)}">
+        <div class="listing-body">
+          <div class="listing-top">
+            <h3>${escapeHtml(v.name)}</h3>
+            <span class="status-chip status-${v.status}">${statusLabel[v.status]}</span>
+          </div>
+          <div class="listing-meta">
+            <span><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11a7 7 0 1 1 14 0c0 4.9-7 11-7 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>${escapeHtml(v.city)}</span>
+            <span>${escapeHtml(v.price)}</span>
+            <span>${v.bookingsCount} bookings</span>
+            ${v.rating ? `<span>★ ${v.rating}</span>` : ''}
+          </div>
+          <div class="listing-actions">${actions}</div>
+        </div>
+      </div>`;
+  }
+  function renderListings(){
+    document.getElementById('listingsList').innerHTML = listings.length
+      ? listings.map(listingCardHTML).join('')
+      : `<div class="empty-state"><p>No vehicles listed yet. Click "+ List a vehicle" to add your first one.</p></div>`;
+    document.getElementById('statListings').textContent = listings.filter(v => v.status === 'live').length;
+    const rated = listings.filter(v => v.rating);
+    const avgRating = rated.length ? rated.reduce((s,v) => s + v.rating, 0) / rated.length : 0;
+    document.getElementById('statRating').textContent = avgRating ? avgRating.toFixed(1) : '—';
+  }
+
+  async function loadBookings(){
+    // Bookings for vehicles owned by this user (RLS enforces this server-side too)
+    const { data: myVehicles } = await supabaseClient.from('vehicles').select('id').eq('owner_id', owner.id);
+    const vehicleIds = (myVehicles || []).map(v => v.id);
+    if (!vehicleIds.length){
+      bookings = [];
+      renderBookings();
+      return;
+    }
+    const { data, error } = await supabaseClient
+      .from('bookings')
+      .select('id, vehicle_id, pickup_date, return_date, total_amount, status, profiles ( full_name ), vehicles ( name )')
+      .in('vehicle_id', vehicleIds)
+      .order('created_at', { ascending: false });
+    if (error){ console.error(error.message); bookings = []; }
+    else {
+      bookings = (data || []).map(b => ({
+        customer: (b.profiles && b.profiles.full_name) || 'Customer',
+        vehicle: (b.vehicles && b.vehicles.name) || 'Vehicle',
+        dates: new Date(b.pickup_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short'}) + ' – ' + new Date(b.return_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}),
+        amount: Number(b.total_amount),
+        status: b.status,
+        vehicle_id: b.vehicle_id
+      }));
+      // Reflect real per-vehicle booking counts on the listing cards
+      listings.forEach(v => {
+        v.bookingsCount = bookings.filter(b => b.vehicle_id === v.id && b.status !== 'cancelled').length;
+      });
+      renderListings();
+    }
+    renderBookings();
+  }
+
+  function renderBookings(){
+    document.getElementById('bookingsList').innerHTML = bookings.length
+      ? bookings.map(b => `
+        <div class="booking-row">
+          <div>
+            <div class="who">${escapeHtml(b.customer)} — ${escapeHtml(b.vehicle)}</div>
+            <div class="details">${b.dates}</div>
+          </div>
+          <div class="amount">₹${b.amount.toLocaleString('en-IN')}</div>
+        </div>`).join('')
+      : `<div class="empty-state"><p>No bookings yet.</p></div>`;
+
+    document.getElementById('statBookings').textContent = bookings.length;
+    const monthEarnings = bookings.filter(b => b.status !== 'cancelled' && b.status !== 'pending_payment').reduce((s,b) => s + b.amount, 0);
+    document.getElementById('statEarnings').textContent = '₹' + monthEarnings.toLocaleString('en-IN');
+  }
+
+  async function loadPayouts(){
+    const { data, error } = await supabaseClient
+      .from('payouts')
+      .select('period_label, amount, status')
+      .eq('owner_id', owner.id)
+      .order('created_at', { ascending: true });
+
+    const payouts = (!error && data) ? data : [];
+
+    if (!payouts.length){
+      document.getElementById('barChart').innerHTML = '';
+      document.getElementById('earningsTotal').textContent = '₹0';
+      document.getElementById('payoutList').innerHTML = `<div class="empty-state"><p>No payouts yet — these appear once your listings start earning.</p></div>`;
+      return;
+    }
+
+    const maxV = Math.max(...payouts.map(x => Number(x.amount)));
+    document.getElementById('barChart').innerHTML = payouts.map(x => `
+      <div class="bar" style="height:${Math.max(8,(Number(x.amount)/maxV)*100)}%;">
+        <span class="bar-label">${x.period_label}</span>
+      </div>`).join('');
+    document.getElementById('earningsTotal').textContent = '₹' + payouts.reduce((s,x)=>s+Number(x.amount),0).toLocaleString('en-IN');
+
+    document.getElementById('payoutList').innerHTML = payouts.slice().reverse().map(p => `
+      <div class="payout-row">
+        <span>${p.period_label}</span>
+        <span>₹${Number(p.amount).toLocaleString('en-IN')}</span>
+        <span class="payout-status ${p.status}">${p.status === 'paid' ? 'Paid' : 'Pending'}</span>
+      </div>`).join('');
+  }
+
+  // tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected','true');
+      document.getElementById(btn.dataset.panel).classList.add('active');
+    });
+  });
+
+  // listing actions — real DB writes
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    const action = btn.dataset.action;
+    if (action === 'pause' || action === 'resume'){
+      const newStatus = action === 'pause' ? 'paused' : 'live';
+      const { error } = await supabaseClient.from('vehicles').update({ status: newStatus }).eq('id', btn.dataset.id);
+      if (error){ alert(error.message); return; }
+      await loadListings();
+    } else if (action === 'edit'){
+      const v = listings.find(x => x.id === btn.dataset.id);
+      if (!v) return;
+      document.getElementById('eId').value = v.id;
+      document.getElementById('eType').value = v.vehicleType || 'Bike / Scooter';
+      document.getElementById('eModel').value = v.name;
+      document.getElementById('eCity').value = v.city;
+      document.getElementById('ePrice').value = v.priceNum;
+      document.getElementById('eImage').value = (v.img && v.img !== 'assets/hero-bikes.jpg') ? v.img : '';
+      editModal.classList.add('open');
+    }
+  });
+
+  // edit vehicle modal
+  const editModal = document.getElementById('editModal');
+  document.getElementById('editModalClose').addEventListener('click', () => editModal.classList.remove('open'));
+  editModal.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('open'); });
+  document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving…';
+
+    const imageUrl = document.getElementById('eImage').value.trim();
+    const { error } = await supabaseClient.from('vehicles').update({
+      name: document.getElementById('eModel').value.trim(),
+      vehicle_type: document.getElementById('eType').value,
+      city: document.getElementById('eCity').value.trim(),
+      price_per_day: Number(document.getElementById('ePrice').value),
+      image_url: imageUrl || 'assets/hero-bikes.jpg'
+    }).eq('id', document.getElementById('eId').value);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Save changes';
+
+    if (error){ alert(error.message); return; }
+    await loadListings();
+    editModal.classList.remove('open');
+    alert('Listing updated!');
+  });
+
+  // add vehicle modal
+  const addModal = document.getElementById('addModal');
+  document.getElementById('addVehicleBtn').addEventListener('click', () => addModal.classList.add('open'));
+  document.getElementById('addModalClose').addEventListener('click', () => addModal.classList.remove('open'));
+  addModal.addEventListener('click', (e) => { if (e.target === addModal) addModal.classList.remove('open'); });
+  document.getElementById('addForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    const imageUrl = document.getElementById('vImage').value.trim();
+    const { error } = await supabaseClient.from('vehicles').insert({
+      owner_id: owner.id,
+      name: document.getElementById('vModel').value.trim(),
+      vehicle_type: document.getElementById('vType').value,
+      city: document.getElementById('vCity').value.trim(),
+      price_per_day: Number(document.getElementById('vPrice').value),
+      image_url: imageUrl || 'assets/hero-bikes.jpg',
+      status: 'review'
+    });
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Submit for review';
+
+    if (error){ alert(error.message); return; }
+    await loadListings();
+    addModal.classList.remove('open');
+    e.target.reset();
+    alert('Vehicle submitted for review!');
+  });
+
+  document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('saveProfileBtn');
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    const { error } = await supabaseClient.from('profiles').update({
+      full_name: document.getElementById('pfName').value.trim(),
+      phone: document.getElementById('pfPhone').value.trim(),
+      city: document.getElementById('pfCity').value.trim(),
+      bank_last4: document.getElementById('pfBank').value.trim()
+    }).eq('id', owner.id);
+    btn.disabled = false;
+    btn.textContent = 'Save changes';
+    if (error){ alert(error.message); return; }
+    alert('Profile saved.');
+  });
+
+  document.getElementById('avatarBtn').addEventListener('click', () => {
+    document.querySelector('[data-panel="panelProfile"]').click();
+  });
+
+  document.getElementById('ownerLogoutLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (confirm('Log out of RentoRide?')){
+      await supabaseClient.auth.signOut();
+      window.location.href = 'login.html';
+    }
+  });
+
+  init();
+</script>
+
+</body>
+</html>
